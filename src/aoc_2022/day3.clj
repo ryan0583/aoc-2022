@@ -9,6 +9,9 @@
       (- asciival 96) 
       (- asciival 38))))
 
+(defn commonchars [firstlist secondlist]
+  (filter #(includes? secondlist (str %)) (seq firstlist)))
+
 (defn linepriority 
   [line]
   (let 
@@ -17,7 +20,7 @@
     halfcharcount (/ charcount 2)
     firstcompartment (subs line 0 halfcharcount)
     secondcompartment (subs line halfcharcount)
-    commonchars (filter #(includes? secondcompartment (str %)) (seq firstcompartment))
+    commonchars (commonchars firstcompartment secondcompartment)
     ]
     (charvalue (first commonchars))))
 
@@ -36,11 +39,7 @@
         line1 (first group)
         line2 (second group)
         line3 (last group)
-        commonchars (filter 
-                     #(includes? line3 (str %)) 
-                     (filter
-                      #(includes? line2 (str %))
-                      (seq line1)))
+        commonchars (commonchars (commonchars line1 line2) line3)
         ]
   (charvalue (first commonchars))))
 

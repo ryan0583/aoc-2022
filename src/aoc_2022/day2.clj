@@ -4,22 +4,24 @@
 
 (defn charscore [char] 
   (case char 
-    "X" 1 
-    "Y" 2 
-    "Z" 3))
+    ("A" "X") 1 
+    ("B" "Y") 2 
+    ("C" "Z") 3))
+
+(defn normalise [number]
+  (let [normalised (if (< number 1) 3 number)
+        normalised (if (> normalised 3) 1 normalised)]
+    normalised))
+
+(defn increment [number] (normalise (+ number 1)))
+
+(defn decrement [number] (normalise (- number 1)))
 
 (defn isdraw? [firstchar secondchar]
-  (or
-   (and (= "A" firstchar) (= "X" secondchar))
-   (and (= "B" firstchar) (= "Y" secondchar))
-   (and (= "C" firstchar) (= "Z" secondchar))))
+  (= (charscore firstchar) (charscore secondchar)))
 
-(defn iswinner? [firstchar secondchar] 
-  (or 
-   (and (= "A" firstchar) (= "Y" secondchar))
-   (and (= "B" firstchar) (= "Z" secondchar))
-   (and (= "C" firstchar) (= "X" secondchar)))
-  )
+(defn iswinner? [firstchar secondchar]
+  (= (increment (charscore firstchar)) (charscore secondchar)))
 
 (defn outcomescore [firstchar secondchar] 
   (cond
@@ -42,37 +44,26 @@
   (let [lines (utils/readlines "resources/day2/input.txt")]
     (apply + (map part1linescore lines))))
 
+(defn loss [outcomecode] (= "X" outcomecode))
+
+(defn draw [outcomecode] (= "Y" outcomecode))
+
+(defn win [outcomecode] (= "Z" outcomecode))
 
 (defn desiredoutcomescore [outcomecode] 
-  (case outcomecode
-    "X" 0
-    "Y" 3
-    "Z" 6))
-
-(defn lossscore [otherplayerchoice]
-  (case otherplayerchoice
-    "A" 3
-    "B" 1
-    "C" 2))
-
-(defn drawscore [otherplayerchoice]
-  (case otherplayerchoice
-    "A" 1
-    "B" 2
-    "C" 3))
-
-(defn winscore [otherplayerchoice]
-  (case otherplayerchoice
-    "A" 2
-    "B" 3
-    "C" 1))
+  (cond
+    (loss outcomecode) 0
+    (draw outcomecode) 3 
+    (win outcomecode) 6))
 
 (defn choicescore [otherplayerchoice outcomecode]
-  (cond
-    (= "X" outcomecode) (lossscore otherplayerchoice)
-    (= "Y" outcomecode) (drawscore otherplayerchoice)
-    (= "Z" outcomecode) (winscore otherplayerchoice)
-    ))
+  (let [otherplayerscore (charscore otherplayerchoice)]
+    (cond
+      (loss outcomecode) (decrement otherplayerscore)
+      (draw outcomecode) otherplayerscore
+      (win outcomecode) (increment otherplayerscore)
+    )
+  ))
 
 (defn part2linescore [line]
   (let
