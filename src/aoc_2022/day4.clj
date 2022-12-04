@@ -1,55 +1,50 @@
-(ns aoc-2022.day4 
+(ns aoc-2022.day4
   (:require [aoc-2022.utils :as utils]
             [clojure.string :refer [split]]))
 
-(defn contains [outer inner]
-  (let [
-        outersplit (split outer #"-")
-        innersplit (split inner #"-")
-        outerlb (Integer/parseInt (first outersplit))
-        outerub (Integer/parseInt (second outersplit))
-        innerlb (Integer/parseInt (first innersplit))
-        innerub (Integer/parseInt (second innersplit))]
-    (and (<= outerlb innerlb) (>= outerub innerub)))
-  )
-
-(defn isfullycontainedrange 
+(defn parseranges 
   [line]
   (let 
-   [
-    split (split line #",")
-    firstrange (first split)
-    secondrange (second split) 
-    isfullcontained (or (contains firstrange secondrange) (contains secondrange firstrange))
+   [linesplit (split line #",")
+    firstrange (first linesplit) 
+    secondrange (second linesplit)
+    firstrangesplit (split firstrange #"-")
+    secondrangesplit (split secondrange #"-")
+    lb1    (Integer/parseInt (first firstrangesplit))
+    ub1    (Integer/parseInt (second firstrangesplit))
+    lb2    (Integer/parseInt (first secondrangesplit))
+    ub2    (Integer/parseInt (second secondrangesplit))
     ]
-   (if isfullcontained 1 0))
+    [lb1 ub1 lb2 ub2])
   )
 
-(defn countfullycontainedranges 
+(defn contains [lb1 ub1 lb2 ub2]
+    (and (<= lb1 lb2) (>= ub1 ub2)))
+
+(defn isfullycontainedrange
+  [line]
+  (let
+   [[lb1 ub1 lb2 ub2] (parseranges line)
+    isfullcontained (or (contains lb1 ub1 lb2 ub2) (contains lb2 ub2 lb1 ub1))]
+    (if isfullcontained 1 0)))
+
+(defn countfullycontainedranges
   [lines]
-  (apply + (map isfullycontainedrange lines))
-  )
+  (apply + (map isfullycontainedrange lines)))
 
 (defn part1
   []
   (let [lines (utils/readlines "resources/day4/input.txt")]
     (countfullycontainedranges lines)))
 
-(defn overlaps [range1 range2]
-  (let [range1split (split range1 #"-") 
-        range2split (split range2 #"-")
-        range1lb (Integer/parseInt (first range1split))
-        range1ub (Integer/parseInt (second range1split))
-        range2lb (Integer/parseInt (first range2split))]
-    (and (>= range1ub range2lb) (<= range1lb range2lb))))
+(defn overlaps [lb1 ub1 lb2]
+  (and (>= ub1 lb2) (<= lb1 lb2)))
 
 (defn isoverlap
   [line]
   (let
-   [split (split line #",")
-    firstrange (first split)
-    secondrange (second split)
-    isoverlap (or (overlaps firstrange secondrange) (overlaps secondrange firstrange))]
+   [[lb1 ub1 lb2 ub2] (parseranges line)
+    isoverlap (or (overlaps lb1 ub1 lb2) (overlaps lb2 ub2 lb1))]
     (if isoverlap 1 0)))
 
 (defn countoverlappingranges
