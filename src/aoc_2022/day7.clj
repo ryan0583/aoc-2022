@@ -2,76 +2,113 @@
   (:require [aoc-2022.utils :as utils]
             [clojure.string :as str]))
 
-(defrecord dir [parent name files dirs])
-
-(defrecord file [name size])
-
-(defn parsedir [line currentdir]
+(defn parsedir [line currentdir directorychildren]
   (let [
-        spaceindex (str/index-of line " ")
-        dirname (subs line (+ spaceindex 1))
-        newdir (dir. @currentdir dirname [] [])
-        newdirs (conj (:dirs @currentdir) newdir)
-        newcurrentdir (assoc @currentdir :dirs newdirs)
+        newdirname (subs line 4)
+        newdirectorychildren (assoc @directorychildren @currentdir (vec (conj (@directorychildren @currentdir) newdirname)))
         ]
-    (swap! currentdir (constantly newcurrentdir))
+    (swap! directorychildren (constantly newdirectorychildren))
    ))
 
-(defn parsefile [line currentdir]
+(defn parsefile [line currentdir directoryfiles filesizes]
   (let [
         spaceindex (str/index-of line " ")
         filesize (subs line 0 spaceindex)
-        filename (subs line (+ spaceindex 1))
-        file (file. filename filesize) 
-        newfiles (conj (:files @currentdir) file)
-        newcurrentdir (assoc @currentdir :files newfiles)
+        filename (subs line (+ 1 spaceindex))
+        newdirectoryfiles (assoc @directoryfiles @currentdir (vec (conj (@directoryfiles @currentdir) filename)))
+        newfilesizes (assoc @filesizes filename filesize)
         ]
-    (swap! currentdir (constantly newcurrentdir))
+    (swap! directoryfiles (constantly newdirectoryfiles))
+    (swap! filesizes (constantly newfilesizes))
     )
   )
 
 (defn parsefileordir 
-  [line currentdir]
+  [line currentdir directorychildren directoryfiles filesizes]
   (let [
         isdir (str/starts-with? line "dir")
         ]
-    (if isdir
-      (parsedir line currentdir) 
-      (parsefile line currentdir)))
-  )
+    (if isdir (parsedir line currentdir directorychildren) (parsefile line currentdir directoryfiles filesizes))
+  ))
 
-(defn changedir [line currentdir]
+(defn changedir [line dirlist dirhistory currentdir]
   (let [
         newdirname (subs line 5)
-        newdir     (if (= ".." newdirname) 
-                     (:parent @currentdir)
-                     (if (= "/" newdirname)
-                       @currentdir
-                       (some #(when (= newdirname (:name %)) %) (:dirs @currentdir))))
+        newcurrentdir (if (= ".." newdirname) (last @dirhistory) newdirname)
+        newdirhistory (if (= ".." newdirname) (vec (drop-last @dirhistory)) (conj @dirhistory @currentdir))
         ]
-    (swap! currentdir (constantly newdir))))
+    (when (not (= ".." newdirname)) (swap! dirlist (constantly (conj @dirlist newdirname))))
+    (swap! currentdir (constantly newcurrentdir))
+    (swap! dirhistory (constantly newdirhistory))
+    ))
 
 (defn parseusercommand 
-  [line currentdir] 
+  [line dirlist dirhistory currentdir] 
   (when 
    (str/starts-with? line "$ cd")
-    (changedir line currentdir))
+    (changedir line dirlist dirhistory currentdir))
   )
 
 (defn parseline 
-  [line currentdir] 
+  [line dirlist dirhistory currentdir directorychildren directoryfiles filesizes] 
   (if (str/starts-with? line "$") 
-    (parseusercommand line currentdir) 
-    (parsefileordir line currentdir)))
+    (parseusercommand line dirlist dirhistory currentdir) 
+    (parsefileordir line currentdir directorychildren directoryfiles filesizes)))
+
+(defn getdirsize [dir directorychildren directoryfiles filesizes]
+  (let [
+        ;; log (println "DIRECTORY: ")
+        ;; log (println dir)
+        
+        mydirectorychildren (directorychildren dir)
+        ;; log (println mydirectorychildren)
+        
+        mydirectoryfiles (directoryfiles dir)
+        ;; log (println mydirectoryfiles)
+        
+        mydirectoryfilesizes (map #(Integer/parseInt (filesizes %)) mydirectoryfiles)
+        ;; log (println mydirectoryfilesizes)
+        
+        totalfilesize (apply + mydirectoryfilesizes)
+        ;; log (println totalfilesize)
+        
+        mychilddirectorysizes (map #(getdirsize % directorychildren directoryfiles filesizes) mydirectorychildren)
+        ;; log (println mychilddirectorysizes)
+        
+        totaldirectorysizes (apply + mychilddirectorysizes)
+        ;; log (println totaldirectorysizes)
+        
+        ;; log (println (+ totalfilesize totaldirectorysizes))
+        
+        ;; log (println)
+        ]
+    (+ totalfilesize totaldirectorysizes)
+    )
+  )
 
 (defn process 
   [lines]
   (let [
-        rootdir    (dir. nil "/" [] [])
-        currentdir (atom rootdir)
+        dirlist (atom [])
+        dirhistory (atom [])
+        currentdir (atom "START")
+        directorychildren (atom {})
+        directoryfiles (atom {})
+        filesizes (atom {})
         ]
-    (doseq [line lines] (parseline line currentdir)) 
-    (println @currentdir)
+    (doseq [line lines] (parseline line dirlist dirhistory currentdir directorychildren directoryfiles filesizes))
+    (println @dirlist)
+    ;; (println)
+    ;; (println @dirhistory)
+    ;; (println)
+    ;; (println @currentdir)
+    (println)
+    (println @directorychildren)
+    (println)
+    (println @directoryfiles)
+    (println)
+    (println @filesizes)
+    (apply + (filter #(< % 100000) (map #(getdirsize % @directorychildren @directoryfiles @filesizes) @dirlist)))
     ))
 
 (defn part1 []
