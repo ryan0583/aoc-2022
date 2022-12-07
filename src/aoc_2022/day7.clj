@@ -4,7 +4,7 @@
 
 (defn parsedir [line currentdir directorychildren]
   (let [
-        newdirname (subs line 4)
+        newdirname (str @currentdir "." (subs line 4))
         newdirectorychildren (assoc @directorychildren @currentdir (vec (conj (@directorychildren @currentdir) newdirname)))
         ]
     (swap! directorychildren (constantly newdirectorychildren))
@@ -14,7 +14,7 @@
   (let [
         spaceindex (str/index-of line " ")
         filesize (subs line 0 spaceindex)
-        filename (subs line (+ 1 spaceindex))
+        filename (str @currentdir "." (subs line (+ 1 spaceindex)))
         newdirectoryfiles (assoc @directoryfiles @currentdir (vec (conj (@directoryfiles @currentdir) filename)))
         newfilesizes (assoc @filesizes filename filesize)
         ]
@@ -34,10 +34,11 @@
 (defn changedir [line dirlist dirhistory currentdir]
   (let [
         newdirname (subs line 5)
-        newcurrentdir (if (= ".." newdirname) (last @dirhistory) newdirname)
+        dirnamewithparent (str @currentdir "." newdirname)
+        newcurrentdir (if (= ".." newdirname) (last @dirhistory) dirnamewithparent)
         newdirhistory (if (= ".." newdirname) (vec (drop-last @dirhistory)) (conj @dirhistory @currentdir))
         ]
-    (when (not (= ".." newdirname)) (swap! dirlist (constantly (conj @dirlist newdirname))))
+    (when (not (= ".." newdirname)) (swap! dirlist conj @dirlist dirnamewithparent))
     (swap! currentdir (constantly newcurrentdir))
     (swap! dirhistory (constantly newdirhistory))
     ))
@@ -57,30 +58,12 @@
 
 (defn getdirsize [dir directorychildren directoryfiles filesizes]
   (let [
-        ;; log (println "DIRECTORY: ")
-        ;; log (println dir)
-        
         mydirectorychildren (directorychildren dir)
-        ;; log (println mydirectorychildren)
-        
         mydirectoryfiles (directoryfiles dir)
-        ;; log (println mydirectoryfiles)
-        
         mydirectoryfilesizes (map #(Integer/parseInt (filesizes %)) mydirectoryfiles)
-        ;; log (println mydirectoryfilesizes)
-        
         totalfilesize (apply + mydirectoryfilesizes)
-        ;; log (println totalfilesize)
-        
         mychilddirectorysizes (map #(getdirsize % directorychildren directoryfiles filesizes) mydirectorychildren)
-        ;; log (println mychilddirectorysizes)
-        
         totaldirectorysizes (apply + mychilddirectorysizes)
-        ;; log (println totaldirectorysizes)
-        
-        ;; log (println (+ totalfilesize totaldirectorysizes))
-        
-        ;; log (println)
         ]
     (+ totalfilesize totaldirectorysizes)
     )
@@ -97,26 +80,25 @@
         filesizes (atom {})
         ]
     (doseq [line lines] (parseline line dirlist dirhistory currentdir directorychildren directoryfiles filesizes))
-    (println @dirlist)
-    ;; (println)
-    ;; (println @dirhistory)
-    ;; (println)
-    ;; (println @currentdir)
-    (println)
-    (println @directorychildren)
-    (println)
-    (println @directoryfiles)
-    (println)
-    (println @filesizes)
-    (apply + (filter #(< % 100000) (map #(getdirsize % @directorychildren @directoryfiles @filesizes) @dirlist)))
+    (map #(getdirsize % @directorychildren @directoryfiles @filesizes) @dirlist)
     ))
+
+(defn getsmallestdirsize [lines]
+  (
+   let [dirsizes    (process lines)
+        totalused   (apply max dirsizes)
+        unusedspace (- 70000000 totalused)
+        spaceneeded (- 30000000 unusedspace)
+        ]
+    (first (sort (filter #(> % spaceneeded) dirsizes)))))
 
 (defn part1 []
   (let
    [input (utils/readlines "resources/day7/input.txt")]
-    (process input)))
+    (apply + (filter #(< % 100000) (process input)))))
 
 (defn part2 []
   (let
    [input (utils/readlines "resources/day7/input.txt")]
+    (getsmallestdirsize input)
     ))
