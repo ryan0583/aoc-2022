@@ -1,9 +1,6 @@
 (ns aoc-2022.day5
-  (:require [aoc-2022.utils :as utils]
+  (:require [aoc-2022.utils :as utils :refer [transpose]]
             [clojure.string :as str :refer [blank?]]))
-
-(defn transpose [m]
-  (apply mapv vector m))
 
 (defn prunestack [stack] (map #(str (second %)) stack))
 

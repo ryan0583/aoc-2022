@@ -4,4 +4,5 @@
 (defn readlines [filename]
   (string/split-lines (slurp filename)))
 
-
+(defn transpose [m]
+  (apply mapv vector m))
