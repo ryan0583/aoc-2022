@@ -52,7 +52,7 @@
         ]
     newtailposition))
 
-(defn moverope [direction tailhistory currenthead]
+(defn moverope! [direction tailhistory currenthead]
   (let [
         newheadposition (movehead direction @currenthead)
         newtailposition (updatetail (last @tailhistory) newheadposition)
@@ -67,7 +67,7 @@
         movecount (Integer/parseInt (subs line 2))
         ]
     (doseq [_ (range movecount)]
-            (moverope direction tailhistory currenthead))
+            (moverope! direction tailhistory currenthead))
     ))
 
 (defn knotposition 
@@ -96,7 +96,7 @@
     (process input)
     ))
 
-(defn move [direction knotpositions tailhistory currenthead]
+(defn move! [direction knotpositions tailhistory currenthead]
   (let [newheadposition (movehead direction @currenthead)]
     (swap! currenthead (constantly newheadposition))
     (swap! (last knotpositions) (constantly (updatetail @(last knotpositions) @currenthead)))
@@ -113,7 +113,7 @@
         movecount (Integer/parseInt (subs line 2))
         ]
     (doseq [_ (range movecount)]
-      (move direction knotpositions tailhistory currenthead))))
+      (move! direction knotpositions tailhistory currenthead))))
 
 (defn processpt2 [lines]
   (let [knotpositions (vec (map knotposition (range 9)))
