@@ -70,48 +70,64 @@
             (moverope direction tailhistory currenthead))
     ))
 
-(defn tailhistory [_] (atom [[0 0]]))
+(defn knotposition 
+  ([] (knotposition 0)) 
+  ([_] (atom [0 0])))
+
+(defn tailhistory [] (atom [[0 0]]))
 
 (defn process [lines]
   (let [
-        tailhistory (tailhistory 0)
-        currenthead (atom [0 0])
+        tailhistory (tailhistory)
+        currenthead (knotposition)
         ]
-    (doseq [line lines]
+    (println "PART 1")
+    (doseq [[index line] lines]
+      (println index)
       (processline line tailhistory currenthead)
       )
+    (println "DONE")
+    (println)
     (count (vec (set @tailhistory)))))
 
 (defn part1 []
   (let
-   [input (utils/readlines "resources/day9/input.txt")]
+   [input (vec (map-indexed vector (utils/readlines "resources/day9/input.txt")))]
     (process input)
     ))
 
-(defn move [direction tailhistories currenthead]
+(defn move [direction knotpositions tailhistory currenthead]
   (let [newheadposition (movehead direction @currenthead)]
     (swap! currenthead (constantly newheadposition))
-    (swap! (last tailhistories) conj (updatetail (last @(last tailhistories)) @currenthead))
+    (swap! (last knotpositions) (constantly (updatetail @(last knotpositions) @currenthead)))
     (doseq [tailindex (reverse (range 8))]
-      (swap! (nth tailhistories tailindex) conj (updatetail (last @(nth tailhistories tailindex)) 
-                                                            (last @(nth tailhistories (+ tailindex 1))))))
+      (swap! (nth knotpositions tailindex) 
+             (constantly (updatetail
+                          @(nth knotpositions tailindex)
+                          @(nth knotpositions (+ tailindex 1))))))
+    (swap! tailhistory conj @(first knotpositions))
     ))
 
-(defn processlinept2 [line tailhistories currenthead]
+(defn processlinept2 [line knotpositions tailhistory currenthead]
   (let [direction (str (first line))
         movecount (Integer/parseInt (subs line 2))
         ]
     (doseq [_ (range movecount)]
-      (move direction tailhistories currenthead))))
+      (move direction knotpositions tailhistory currenthead))))
 
 (defn processpt2 [lines]
-  (let [tailhistories (vec (map tailhistory (range 9)))
-        currenthead (atom [0 0])]
-    (doseq [line lines]
-      (processlinept2 line tailhistories currenthead))
-    (count (vec (set @(first tailhistories))))))
+  (let [knotpositions (vec (map knotposition (range 9)))
+        tailhistory (tailhistory)
+        currenthead (knotposition)]
+    (println "PART 2")
+    (doseq [[index line] lines]
+      (println index)
+      (processlinept2 line knotpositions tailhistory currenthead))
+    (println "DONE")
+    (println)
+    (count (vec (set @tailhistory)))))
 
 (defn part2 []
   (let
-   [input (utils/readlines "resources/day9/input.txt")]
+   [input (vec (map-indexed vector (utils/readlines "resources/day9/input.txt")))]
     (processpt2 input)))
