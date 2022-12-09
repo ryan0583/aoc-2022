@@ -1,6 +1,13 @@
 (ns aoc-2022.day9
   (:require [aoc-2022.utils :as utils]))
 
+(defn movehead [direction currenthead]
+  (case direction
+    "R" [(+ (first currenthead) 1) (second currenthead)]
+    "L" [(- (first currenthead) 1) (second currenthead)]
+    "U" [(first currenthead) (+ (second currenthead) 1)]
+    "D" [(first currenthead) (- (second currenthead) 1)]))
+
 (defn istouching [tailposition headposition]
   (or (= tailposition headposition)
       
@@ -45,18 +52,10 @@
         ]
     newtailposition))
 
-(defn movehead [direction tailhistory currenthead]
+(defn moverope [direction tailhistory currenthead]
   (let [
-        newheadposition (case direction
-                          "R" [(+ (first @currenthead) 1) (second @currenthead)]
-                          "L" [(- (first @currenthead) 1) (second @currenthead)]
-                          "U" [(first @currenthead) (+ (second @currenthead) 1)]
-                          "D" [(first @currenthead) (- (second @currenthead) 1)])
-        ;; log (println newheadposition)
+        newheadposition (movehead direction @currenthead)
         newtailposition (updatetail (last @tailhistory) newheadposition)
-        ;; log (println newtailposition)
-        ;; log (println @tailhistory)
-        ;; log (println)
         ]
     (swap! currenthead (constantly newheadposition))
     (swap! tailhistory conj newtailposition)
@@ -66,29 +65,53 @@
   (let [
         direction (str (first line))
         movecount (Integer/parseInt (subs line 2))
-        ;; log (println movecount)
         ]
-    (doseq [moveindex (range movecount)]
-            (movehead direction tailhistory currenthead))
+    (doseq [_ (range movecount)]
+            (moverope direction tailhistory currenthead))
     ))
+
+(defn tailhistory [_] (atom [[0 0]]))
 
 (defn process [lines]
   (let [
-        tailhistory (atom [[0 0]])
+        tailhistory (tailhistory 0)
         currenthead (atom [0 0])
         ]
     (doseq [line lines]
       (processline line tailhistory currenthead)
       )
-    ;; (println @tailhistory)
     (count (vec (set @tailhistory)))))
 
 (defn part1 []
   (let
    [input (utils/readlines "resources/day9/input.txt")]
-    (process input)))
+    (process input)
+    ))
+
+(defn move [direction tailhistories currenthead]
+  (let [newheadposition (movehead direction @currenthead)]
+    (swap! currenthead (constantly newheadposition))
+    (swap! (last tailhistories) conj (updatetail (last @(last tailhistories)) @currenthead))
+    (doseq [tailindex (reverse (range 8))]
+      (swap! (nth tailhistories tailindex) conj (updatetail (last @(nth tailhistories tailindex)) 
+                                                            (last @(nth tailhistories (+ tailindex 1))))))
+    ))
+
+(defn processlinept2 [line tailhistories currenthead]
+  (let [direction (str (first line))
+        movecount (Integer/parseInt (subs line 2))
+        ]
+    (doseq [_ (range movecount)]
+      (move direction tailhistories currenthead))))
+
+(defn processpt2 [lines]
+  (let [tailhistories (vec (map tailhistory (range 9)))
+        currenthead (atom [0 0])]
+    (doseq [line lines]
+      (processlinept2 line tailhistories currenthead))
+    (count (vec (set @(first tailhistories))))))
 
 (defn part2 []
   (let
    [input (utils/readlines "resources/day9/input.txt")]
-    ""))
+    (processpt2 input)))
