@@ -65,7 +65,8 @@
 (defn processline [line tailhistory currenthead]
   (let [
         direction (str (first line))
-        movecount (Integer/parseInt (str (last line)))
+        movecount (Integer/parseInt (subs line 2))
+        ;; log (println movecount)
         ]
     (doseq [moveindex (range movecount)]
             (movehead direction tailhistory currenthead))
