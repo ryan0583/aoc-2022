@@ -1,7 +1,7 @@
 (ns aoc-2022.day9
   (:require [aoc-2022.utils :as utils]))
 
-(defn movehead [direction currenthead]
+(defn movehead [currenthead direction]
   (case direction
     "R" [(+ (first currenthead) 1) (second currenthead)]
     "L" [(- (first currenthead) 1) (second currenthead)]
@@ -54,7 +54,7 @@
 
 (defn moverope! [direction tailhistory currenthead]
   (let [
-        newheadposition (movehead direction @currenthead)
+        newheadposition (movehead @currenthead direction)
         newtailposition (updatetail (last @tailhistory) newheadposition)
         ]
     (swap! currenthead (constantly newheadposition))
@@ -88,25 +88,23 @@
       )
     (println "DONE")
     (println)
-    (count (vec (set @tailhistory)))))
+    (count (set @tailhistory))))
 
 (defn part1 []
   (let
-   [input (vec (map-indexed vector (utils/readlines "resources/day9/input.txt")))]
+   [input (map-indexed vector (utils/readlines "resources/day9/input.txt"))]
     (process input)
     ))
 
 (defn move! [direction knotpositions tailhistory currenthead]
-  (let [newheadposition (movehead direction @currenthead)]
-    (swap! currenthead (constantly newheadposition))
-    (swap! (last knotpositions) (constantly (updatetail @(last knotpositions) @currenthead)))
+    (swap! currenthead movehead direction)
+    (swap! (last knotpositions) updatetail @currenthead)
     (doseq [tailindex (reverse (range 8))]
       (swap! (nth knotpositions tailindex) 
-             (constantly (updatetail
-                          @(nth knotpositions tailindex)
-                          @(nth knotpositions (+ tailindex 1))))))
+             updatetail
+             @(nth knotpositions (+ tailindex 1))))
     (swap! tailhistory conj @(first knotpositions))
-    ))
+    )
 
 (defn processlinept2 [line knotpositions tailhistory currenthead]
   (let [direction (str (first line))
@@ -116,7 +114,7 @@
       (move! direction knotpositions tailhistory currenthead))))
 
 (defn processpt2 [lines]
-  (let [knotpositions (vec (map knotposition (range 9)))
+  (let [knotpositions (map knotposition (range 9))
         tailhistory (tailhistory)
         currenthead (knotposition)]
     (println "PART 2")
@@ -125,9 +123,9 @@
       (processlinept2 line knotpositions tailhistory currenthead))
     (println "DONE")
     (println)
-    (count (vec (set @tailhistory)))))
+    (count (set @tailhistory))))
 
 (defn part2 []
   (let
-   [input (vec (map-indexed vector (utils/readlines "resources/day9/input.txt")))]
+   [input (map-indexed vector (utils/readlines "resources/day9/input.txt"))]
     (processpt2 input)))
