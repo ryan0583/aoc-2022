@@ -51,9 +51,35 @@
 (defn part1 []
   (let
    [input (utils/readlines "resources/day10/input.txt")]
-    (process input)))
+    (process input)
+    ))
+
+(defn processpt2 [lines]
+  (let [instruction-index   (atom 0)
+        current-instruction (atom nil)
+        instruction-history (atom [1])
+        crt-row (atom "")
+        column-index (atom 0)]
+    (doseq [cycle-number (range 240)]
+    ;;   (println cycle-number)
+      (let [sprite-middle (apply + @instruction-history)]
+        ;; (println "START CYCLE: " (+ cycle-number 1))
+
+        (swap! crt-row str (if (<= (- @column-index 1) sprite-middle (+ @column-index 1)) "#" "."))
+        (perform-cycle instruction-index current-instruction instruction-history lines)
+        (swap! column-index + 1)
+        ;; (println "OLD SPRITE POSITION: " sprite-middle)
+        ;; (println "CURRENT CRT ROW: " @crt-row)
+        ;; (println "NEW SPRITE POSITION: " (apply + @instruction-history))
+        ;; (println)
+
+        (when (.contains [40 80 120 160 200 240] (+ cycle-number 1))
+          (println @crt-row)
+          (swap! crt-row (constantly ""))
+          (swap! column-index (constantly 0)))))))
 
 (defn part2 []
   (let
-   [input (map-indexed vector (utils/readlines "resources/day10/input.txt"))]
-    ""))
+   [input (utils/readlines "resources/day10/input.txt")]
+    (processpt2 input)
+    "SEE ABOVE!"))
