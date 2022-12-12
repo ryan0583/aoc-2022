@@ -64,66 +64,61 @@
 (defn passes-test? [worry-level monkey]
   (= (mod worry-level (get (get monkey :test-fn) :divisor)) 0))
 
-(defn item-round [item monkey-index monkey monkey-lines]
+(defn item-round [item monkey-index monkey monkey-lines part]
   (let  [
          adjusted-worry-level (adjust-worry-level item monkey)
-         adjusted-worry-level (int (floor (/ adjusted-worry-level 3)))
+         
+         adjusted-worry-level (if (= 1 part) 
+                                (int (floor (/ adjusted-worry-level 3)))
+                                (mod adjusted-worry-level (apply * (map #(get (get % :test-fn) :divisor) @monkey-lines))))
+         
          passes-test? (passes-test? adjusted-worry-level monkey)
          test-fn (get monkey :test-fn)
          new-monkey-index (if passes-test? (get test-fn :true-monkey)
                               (get test-fn :false-monkey))
          existing-new-monkey (nth @monkey-lines new-monkey-index)
          new-monkey-lines (assoc @monkey-lines new-monkey-index
-                                (assoc existing-new-monkey
-                                       :items (conj (get existing-new-monkey :items) adjusted-worry-level)))
+                                 (assoc existing-new-monkey
+                                        :items (conj (get existing-new-monkey :items) adjusted-worry-level)))
          monkey-items (get monkey :items)
          new-monkey-lines (assoc new-monkey-lines monkey-index
                                  (assoc monkey
                                         :items (subvec monkey-items 1)))
-        ;;  log (println new-monkey-lines)
          ]
     (swap! monkey-lines (constantly new-monkey-lines))
     )
   )
 
-(defn monkey-round [monkey-lines monkey monkey-index]
+(defn monkey-round [monkey-lines monkey monkey-index part]
   (let [items (get monkey :items)
         new-monkey-lines (assoc @monkey-lines monkey-index
                                 (assoc monkey :count-inspected (+ (get monkey :count-inspected) (count items))))]
     (swap! monkey-lines (constantly new-monkey-lines))
-    ;; (println (str "MONKEY: " monkey-index))
     (doseq [item items]
-      (item-round item monkey-index (get @monkey-lines monkey-index) monkey-lines)
-      ;; (println)
-      )
-    ;; (println)
-    ))
+      (item-round item monkey-index (get @monkey-lines monkey-index) monkey-lines part))))
 
 
-(defn do-round [monkey-lines]
+(defn do-round [monkey-lines part]
   (doseq [[index _] (map-indexed vector @monkey-lines)]
-    (monkey-round monkey-lines (get @monkey-lines index) index)))
+    (monkey-round monkey-lines (get @monkey-lines index) index part)))
 
-(defn process [lines]
+(defn process [lines part]
   (let
    [monkey-lines (atom [])
     monkey-index (atom -1)]
     (doseq [[index line] lines]
       (readline lines line monkey-lines monkey-index index))
-    (doseq [round (range 20)]
-      ;; (println round)
-      (do-round monkey-lines)
-      ;; (println)
-      )
-    ;; (println)
+    (doseq [_ (range (if (= 1 part) 20 10000))]
+      (do-round monkey-lines part))
     (apply * (take 2 (reverse (sort (map #(get % :count-inspected) @monkey-lines)))))))
 
 (defn part1 []
   (let
    [input (map-indexed vector (utils/readlines "resources/day11/input.txt"))]
-    (process input)))
+    (process input 1)
+    ))
 
 (defn part2 []
   (let
-   [input (utils/readlines "resources/day11/input.txt")]
-    ""))
+   [input (map-indexed vector(utils/readlines "resources/day11/input.txt"))]
+    (process input 2)))
